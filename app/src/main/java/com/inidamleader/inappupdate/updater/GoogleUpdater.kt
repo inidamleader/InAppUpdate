@@ -20,10 +20,16 @@ class GoogleUpdater(activity: FragmentActivity) : LifecycleObserver {
         require(activity is Listener)
     }
 
+    // MANAGER
+    private val appUpdateManager = AppUpdateManagerFactory.create(activity)
+
+    // SAFE ACTIVITY REF
     private val activityWeakReference = WeakReference(activity)
     private val nullableActivity get() = activityWeakReference.get()
+
+    // LISTENER
     private val listener get() = nullableActivity as Listener?
-    private val appUpdateManager = AppUpdateManagerFactory.create(activity)
+
     private val installStateUpdatedListener: InstallStateUpdatedListener =
         object : InstallStateUpdatedListener {
             override fun onStateUpdate(state: InstallState) {
@@ -49,8 +55,6 @@ class GoogleUpdater(activity: FragmentActivity) : LifecycleObserver {
     }
 
     fun checkUpdate() {
-        installStateUpdatedListener
-
         appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
             when {
                 appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED -> showCompleteUpdateDialog()
@@ -95,6 +99,7 @@ class GoogleUpdater(activity: FragmentActivity) : LifecycleObserver {
         appUpdateManager.unregisterListener(installStateUpdatedListener)
     }
 
+    // The listener that has to be implemented by the activity
     interface Listener {
         val requestCode: Int
         val confirmationDialogTag: String

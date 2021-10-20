@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.Button
 import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.coroutineScope
@@ -20,14 +21,10 @@ class MainActivity : AppCompatActivity(), GoogleUpdater.Listener,
     ConfirmationDialogFragment.Listener {
 
     private val googleUpdater by lazy { GoogleUpdater(this) }
-    private lateinit var updateProgressBar: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        updateProgressBar = findViewById(R.id.updateProgressBar)
-
 
         // try catch bloc is used to prevent crash on you app,
         // because the code inside it is not part of core functionalities,
@@ -43,12 +40,14 @@ class MainActivity : AppCompatActivity(), GoogleUpdater.Listener,
             // Report this exception
         }
 
-        lifecycle.coroutineScope.launch {
-            delay(3000)
-            val max = 340
-            for (i in 0..max) {
-                delay(100)
-                publishProgress(i.toLong(), max.toLong())
+        // Just for testing UI
+        findViewById<Button>(R.id.button).setOnClickListener {
+            lifecycle.coroutineScope.launch {
+                val max = 154
+                for (i in 0..max) {
+                    delay(100)
+                    publishProgress(i.toLong(), max.toLong())
+                }
             }
         }
     }
@@ -74,23 +73,24 @@ class MainActivity : AppCompatActivity(), GoogleUpdater.Listener,
 
     override fun onNegativeButtonClick(tag: String) {}
 
-    override val requestCode get() = REQUEST_CODE_APP_UPDATE
+    override val requestCode = REQUEST_CODE_APP_UPDATE
 
-    override val confirmationDialogTag get() = TAG_FRAGMENT_DIALOG_CONFIRMATION_GOOGLE_UPDATE
+    override val confirmationDialogTag = TAG_FRAGMENT_DIALOG_CONFIRMATION_GOOGLE_UPDATE
 
     override fun publishProgress(bytesDownloaded: Long, totalBytesToDownload: Long) {
-        val max = updateProgressBar.max
+        val progressBar = findViewById<ProgressBar>(R.id.progressBar)
+        val max = progressBar.max
         val percentageProgress = ((bytesDownloaded * max) / totalBytesToDownload).toInt()
-        if (updateProgressBar.progress != percentageProgress) {
-            if (percentageProgress < max) updateProgressBar.visibility = View.VISIBLE
-            else updateProgressBar.apply {
+        if (progressBar.progress != percentageProgress) {
+            if (percentageProgress < max) progressBar.visibility = View.VISIBLE
+            else progressBar.apply {
                 visibility = View.INVISIBLE
                 progress = 0
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-                updateProgressBar.setProgress(percentageProgress, true)
-            else updateProgressBar.progress = percentageProgress
+                progressBar.setProgress(percentageProgress, true)
+            else progressBar.progress = percentageProgress
         }
     }
 
