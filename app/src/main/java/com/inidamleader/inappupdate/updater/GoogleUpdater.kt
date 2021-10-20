@@ -99,7 +99,7 @@ class GoogleUpdater(activity: FragmentActivity) : LifecycleObserver {
         appUpdateManager.unregisterListener(installStateUpdatedListener)
     }
 
-    // The listener that has to be implemented by the activity
+    // This listener must be implemented by the activity
     interface Listener {
         val requestCode: Int
         val confirmationDialogTag: String
