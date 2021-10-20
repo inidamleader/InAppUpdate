@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">InAppUpdate</string>
+    <string name="notification">"Notification"</string>
+    <string name="restart_to_complete_update">"Restart to complete update?"</string>
+    <string name="no">"No"</string>
+    <string name="yes">"Yes"</string>
+</resources>
