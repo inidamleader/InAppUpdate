@@ -6,16 +6,12 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.Button
 import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.coroutineScope
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.inidamleader.inappupdate.ui.dialog.ConfirmationDialogFragment
 import com.inidamleader.inappupdate.updater.GoogleUpdater
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity(), GoogleUpdater.Listener,
     ConfirmationDialogFragment.Listener {
@@ -26,8 +22,7 @@ class MainActivity : AppCompatActivity(), GoogleUpdater.Listener,
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // try catch bloc is used to prevent crash on you app,
-        // because the code inside it is not part of core functionalities,
+        // try catch bloc is used to prevent crash on app, because the code inside is not part of core functionalities,
         // so if there is a problem with GoogleUpdater the app continue running without crash
         try {
             if (savedInstanceState == null && isGooglePlayServicesAvailable()) {
@@ -40,16 +35,16 @@ class MainActivity : AppCompatActivity(), GoogleUpdater.Listener,
             // Report this exception
         }
 
-        // Just for testing UI
-        findViewById<Button>(R.id.button).setOnClickListener {
-            lifecycle.coroutineScope.launch {
-                val max = 154
-                for (i in 0..max) {
-                    delay(100)
-                    publishProgress(i.toLong(), max.toLong())
-                }
-            }
-        }
+        // This code can be used to test progressBar UI but should be removed on production
+//        findViewById<Button>(R.id.button).setOnClickListener {
+//            lifecycle.coroutineScope.launch {
+//                val max = 154
+//                for (i in 0..max) {
+//                    delay(100)
+//                    publishProgress(i.toLong(), max.toLong())
+//                }
+//            }
+//        }
     }
 
     // Optional
@@ -101,8 +96,6 @@ class MainActivity : AppCompatActivity(), GoogleUpdater.Listener,
     }
 }
 
-fun Context.isGooglePlayServicesAvailable(): Boolean {
-    val googleApiAvailability = GoogleApiAvailability.getInstance()
-    val resultCode = googleApiAvailability.isGooglePlayServicesAvailable(this)
-    return resultCode == ConnectionResult.SUCCESS
-}
+fun Context.isGooglePlayServicesAvailable() =
+    GoogleApiAvailability.getInstance()
+        .isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS
