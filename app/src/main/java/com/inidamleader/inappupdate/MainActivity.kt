@@ -11,12 +11,12 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.inidamleader.inappupdate.ui.dialog.ConfirmationDialogFragment
-import com.inidamleader.inappupdate.updater.FlexibleGoogleUpdater
+import com.inidamleader.inappupdate.updater.GoogleFlexibleUpdater
 
-class MainActivity : AppCompatActivity(), FlexibleGoogleUpdater.Listener,
+class MainActivity : AppCompatActivity(), GoogleFlexibleUpdater.Listener,
     ConfirmationDialogFragment.Listener {
 
-    private val flexibleGoogleUpdater by lazy { FlexibleGoogleUpdater(this) }
+    private val googleFlexibleUpdater by lazy { GoogleFlexibleUpdater(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity(), FlexibleGoogleUpdater.Listener,
         // so if there is a problem with GoogleUpdater the app continue running without crash
         try {
             if (savedInstanceState == null && isGooglePlayServicesAvailable()) {
-                flexibleGoogleUpdater.also {
+                googleFlexibleUpdater.also {
                     it.checkUpdate()
                     lifecycle.addObserver(it)
                 }
@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity(), FlexibleGoogleUpdater.Listener,
     override fun onPositiveButtonClick(tag: String) {
         when (tag) {
             // ...
-            TAG_FRAGMENT_DIALOG_CONFIRMATION_GOOGLE_UPDATE -> flexibleGoogleUpdater.completeUpdate()
+            TAG_FRAGMENT_DIALOG_CONFIRMATION_GOOGLE_UPDATE -> googleFlexibleUpdater.completeUpdate()
             // ...
         }
     }
