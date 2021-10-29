@@ -53,8 +53,9 @@ class FlexibleGoogleUpdater(
         appUpdateManager.registerListener(installStateUpdatedListener)
     }
 
-    fun completeUpdate() {
-        appUpdateManager.completeUpdate()
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    private fun onDestroy() {
+        appUpdateManager.unregisterListener(installStateUpdatedListener)
     }
 
     fun checkUpdate() {
@@ -98,9 +99,8 @@ class FlexibleGoogleUpdater(
         }
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    private fun onDestroy() {
-        appUpdateManager.unregisterListener(installStateUpdatedListener)
+    fun completeUpdate() {
+        appUpdateManager.completeUpdate()
     }
 
     // The listener that has to be implemented by the activity
