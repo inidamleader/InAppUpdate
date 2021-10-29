@@ -94,8 +94,8 @@ class GoogleUpdater(activity: FragmentActivity) : LifecycleObserver {
         }
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
-    private fun onStop() {
+    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    private fun onDestroy() {
         appUpdateManager.unregisterListener(installStateUpdatedListener)
     }
 
