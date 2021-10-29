@@ -1,5 +1,6 @@
 package com.inidamleader.inappupdate.updater
 
+import android.annotation.SuppressLint
 import android.content.IntentSender.SendIntentException
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
@@ -15,7 +16,10 @@ import com.inidamleader.inappupdate.R
 import com.inidamleader.inappupdate.ui.dialog.ConfirmationDialogFragment
 import java.lang.ref.WeakReference
 
-class GoogleUpdater(activity: FragmentActivity) : LifecycleObserver {
+class FlexibleGoogleUpdater(
+    activity: FragmentActivity,
+    private val daysForFlexibleUpdate: Int = DEFAULT_DAYS_FOR_FLEXIBLE_UPDATE
+) : LifecycleObserver {
     init {
         require(activity is Listener)
     }
@@ -32,16 +36,15 @@ class GoogleUpdater(activity: FragmentActivity) : LifecycleObserver {
 
     private val installStateUpdatedListener: InstallStateUpdatedListener =
         object : InstallStateUpdatedListener {
+            @SuppressLint("SwitchIntDef")
             override fun onStateUpdate(state: InstallState) {
-                when {
-                    state.installStatus() == InstallStatus.DOWNLOADING -> listener?.publishProgress(
+                when (state.installStatus()) {
+                    InstallStatus.DOWNLOADING -> listener?.publishProgress(
                         state.bytesDownloaded(),
                         state.totalBytesToDownload()
                     )
-                    state.installStatus() == InstallStatus.DOWNLOADED -> showCompleteUpdateDialog()
-                    state.installStatus() == InstallStatus.INSTALLED -> appUpdateManager.unregisterListener(
-                        this
-                    )
+                    InstallStatus.DOWNLOADED -> showCompleteUpdateDialog()
+                    InstallStatus.INSTALLED -> appUpdateManager.unregisterListener(this)
                 }
             }
         }
@@ -61,15 +64,16 @@ class GoogleUpdater(activity: FragmentActivity) : LifecycleObserver {
                 appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
                         && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
                         && (appUpdateInfo.clientVersionStalenessDays()
-                    ?: -1) >= DAYS_FOR_FLEXIBLE_UPDATE -> {
+                    ?: -1) >= daysForFlexibleUpdate -> {
                     try {
                         nullableActivity?.let { activity ->
-                            appUpdateManager.startUpdateFlowForResult(
-                                appUpdateInfo,
-                                AppUpdateType.FLEXIBLE,
-                                activity,
-                                (activity as Listener).requestCode
-                            )
+                            if (!activity.isFinishing)
+                                appUpdateManager.startUpdateFlowForResult(
+                                    appUpdateInfo,
+                                    AppUpdateType.FLEXIBLE,
+                                    activity,
+                                    (activity as Listener).requestCode
+                                )
                         }
                     } catch (e: SendIntentException) {
                     }
@@ -99,7 +103,7 @@ class GoogleUpdater(activity: FragmentActivity) : LifecycleObserver {
         appUpdateManager.unregisterListener(installStateUpdatedListener)
     }
 
-    // This listener must be implemented by the activity
+    // The listener that has to be implemented by the activity
     interface Listener {
         val requestCode: Int
         val confirmationDialogTag: String
@@ -107,6 +111,6 @@ class GoogleUpdater(activity: FragmentActivity) : LifecycleObserver {
     }
 
     companion object {
-        const val DAYS_FOR_FLEXIBLE_UPDATE = 1
+        const val DEFAULT_DAYS_FOR_FLEXIBLE_UPDATE = 1
     }
 }
