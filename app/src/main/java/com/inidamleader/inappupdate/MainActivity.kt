@@ -27,8 +27,8 @@ class MainActivity : AppCompatActivity(), GoogleFlexibleUpdater.Listener,
         try {
             if (savedInstanceState == null && isGooglePlayServicesAvailable()) {
                 googleFlexibleUpdater.also {
-                    it.checkUpdate()
                     lifecycle.addObserver(it)
+                    it.checkUpdate()
                 }
             }
         } catch (e: Exception) {
