@@ -4,8 +4,8 @@ import android.annotation.SuppressLint
 import android.content.IntentSender.SendIntentException
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.install.InstallState
 import com.google.android.play.core.install.InstallStateUpdatedListener
@@ -19,7 +19,7 @@ import java.lang.ref.WeakReference
 class GoogleFlexibleUpdater(
     activity: FragmentActivity,
     private val daysForFlexibleUpdate: Int = DEFAULT_DAYS_FOR_FLEXIBLE_UPDATE
-) : LifecycleObserver {
+) : LifecycleEventObserver {
     init {
         require(activity is Listener)
     }
@@ -34,6 +34,13 @@ class GoogleFlexibleUpdater(
     // LISTENER
     private val listener get() = nullableActivity as Listener?
 
+    // DIALOG
+    // Used to avoid IllegalStateException for DialogFragments
+    // You can refer to this blog for more explanation:
+    // https://medium.com/@alvaro.blanco/avoiding-illegalstateexception-for-dialogfragments-6a8f31c4ce73
+    private val pendingDialogs = mutableListOf<ConfirmationDialogFragment>()
+    private var canShowDialogs = false
+
     private val installStateUpdatedListener: InstallStateUpdatedListener =
         object : InstallStateUpdatedListener {
             @SuppressLint("SwitchIntDef")
@@ -43,7 +50,7 @@ class GoogleFlexibleUpdater(
                         state.bytesDownloaded(),
                         state.totalBytesToDownload()
                     )
-                    InstallStatus.DOWNLOADED -> showCompleteUpdateDialog()
+                    InstallStatus.DOWNLOADED -> showCompleteUpdateConfirmationDialog()
                     InstallStatus.INSTALLED -> appUpdateManager.unregisterListener(this)
                 }
             }
@@ -53,19 +60,40 @@ class GoogleFlexibleUpdater(
         appUpdateManager.registerListener(installStateUpdatedListener)
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    private fun onDestroy() {
-        appUpdateManager.unregisterListener(installStateUpdatedListener)
+    override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
+        when (event) {
+            Lifecycle.Event.ON_CREATE -> {
+            }
+            Lifecycle.Event.ON_START -> {
+            }
+            Lifecycle.Event.ON_RESUME -> {
+                canShowDialogs = true
+                pendingDialogs.forEach { it.show() }
+                pendingDialogs.clear()
+            }
+            Lifecycle.Event.ON_PAUSE -> canShowDialogs = false
+            Lifecycle.Event.ON_STOP -> {
+            }
+            Lifecycle.Event.ON_DESTROY -> {
+                pendingDialogs.clear()
+                appUpdateManager.unregisterListener(installStateUpdatedListener)
+            }
+            Lifecycle.Event.ON_ANY -> {
+            }
+        }
     }
 
     fun checkUpdate() {
         appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+            val isDownloaded = appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED
+            val isAvailable =
+                (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE &&
+                        appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE) &&
+                        (appUpdateInfo.clientVersionStalenessDays() ?: -1) >= daysForFlexibleUpdate)
+
             when {
-                appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED -> showCompleteUpdateDialog()
-                appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
-                        && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
-                        && (appUpdateInfo.clientVersionStalenessDays()
-                    ?: -1) >= daysForFlexibleUpdate -> {
+                isDownloaded -> showCompleteUpdateConfirmationDialog()
+                isAvailable -> {
                     try {
                         nullableActivity?.let { activity ->
                             if (!activity.isFinishing)
@@ -83,20 +111,24 @@ class GoogleFlexibleUpdater(
         }
     }
 
-    private fun showCompleteUpdateDialog() {
+    private fun showCompleteUpdateConfirmationDialog() {
         nullableActivity?.let { activity ->
-            if (!activity.isFinishing)
+            if (!activity.isFinishing) {
                 ConfirmationDialogFragment
                     .new(
                         R.string.notification,
                         R.string.restart_to_complete_update,
                         R.drawable.ic_notification
-                    )
-                    .show(
-                        activity.supportFragmentManager,
-                        (activity as Listener).confirmationDialogTag
-                    )
+                    ).also {
+                        if (canShowDialogs) it.show()
+                        else pendingDialogs.add(it)
+                    }
+            }
         }
+    }
+
+    private fun ConfirmationDialogFragment.show() = nullableActivity?.let {
+        show(it.supportFragmentManager, (it as Listener).confirmationDialogTag)
     }
 
     fun completeUpdate() {
