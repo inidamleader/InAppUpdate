@@ -6,12 +6,16 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.Button
 import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.coroutineScope
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import com.inidamleader.inappupdate.ui.dialog.ConfirmationDialogFragment
 import com.inidamleader.inappupdate.updater.GoogleFlexibleUpdater
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity(), GoogleFlexibleUpdater.Listener,
     ConfirmationDialogFragment.Listener {
@@ -36,15 +40,16 @@ class MainActivity : AppCompatActivity(), GoogleFlexibleUpdater.Listener,
         }
 
         // This code can be used to test progressBar UI but should be removed on production
-//        findViewById<Button>(R.id.button).setOnClickListener {
-//            lifecycle.coroutineScope.launch {
-//                val max = 154
-//                for (i in 0..max) {
-//                    delay(100)
-//                    publishProgress(i.toLong(), max.toLong())
-//                }
-//            }
-//        }
+        // todo remove this code
+        findViewById<Button>(R.id.button).setOnClickListener {
+            lifecycle.coroutineScope.launch {
+                val max = 154
+                for (i in 0..max) {
+                    delay(100)
+                    publishProgress(i.toLong(), max.toLong())
+                }
+            }
+        }
     }
 
     // Optional
