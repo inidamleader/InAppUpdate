@@ -1,2 +1,2 @@
 # InAppUpdate
-Google library In-App update helper class
+Helper class to use Google library In-App update
