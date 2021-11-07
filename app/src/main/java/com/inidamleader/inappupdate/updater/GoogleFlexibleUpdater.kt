@@ -20,6 +20,7 @@ class GoogleFlexibleUpdater(
     activity: FragmentActivity,
     private val daysForFlexibleUpdate: Int = DEFAULT_DAYS_FOR_FLEXIBLE_UPDATE
 ) : LifecycleEventObserver {
+
     init {
         require(activity is Listener)
     }
@@ -29,17 +30,21 @@ class GoogleFlexibleUpdater(
 
     // SAFE ACTIVITY REF
     private val activityWeakReference = WeakReference(activity)
-    private val nullableActivity get() = activityWeakReference.get()
-
-    // LISTENER
-    private val listener get() = nullableActivity as Listener?
+    private val nullableActivity
+        get() = activityWeakReference.get()?.let {
+            if (!it.isFinishing) it
+            else null
+        }
 
     // DIALOG
-    // Used to avoid IllegalStateException for DialogFragments
-    // You can refer to this blog for more explanation:
+    // pendingDialogs property list is used to store FragmentDialog when the activity is not at resumed state
+    // and wait until the activity resume to show it. You can refer to this blog for more explanation:
     // https://medium.com/@alvaro.blanco/avoiding-illegalstateexception-for-dialogfragments-6a8f31c4ce73
     private val pendingDialogs = mutableListOf<ConfirmationDialogFragment>()
     private var canShowDialogs = false
+
+    // LISTENER
+    val listener get() = nullableActivity as Listener?
 
     private val installStateUpdatedListener: InstallStateUpdatedListener =
         object : InstallStateUpdatedListener {
@@ -96,13 +101,12 @@ class GoogleFlexibleUpdater(
                 isAvailable -> {
                     try {
                         nullableActivity?.let { activity ->
-                            if (!activity.isFinishing)
-                                appUpdateManager.startUpdateFlowForResult(
-                                    appUpdateInfo,
-                                    AppUpdateType.FLEXIBLE,
-                                    activity,
-                                    (activity as Listener).requestCode
-                                )
+                            appUpdateManager.startUpdateFlowForResult(
+                                appUpdateInfo,
+                                AppUpdateType.FLEXIBLE,
+                                activity,
+                                (activity as Listener).requestCode
+                            )
                         }
                     } catch (e: SendIntentException) {
                     }
@@ -112,22 +116,19 @@ class GoogleFlexibleUpdater(
     }
 
     private fun showCompleteUpdateConfirmationDialog() {
-        nullableActivity?.let { activity ->
-            if (!activity.isFinishing) {
-                ConfirmationDialogFragment
-                    .new(
-                        R.string.notification,
-                        R.string.restart_to_complete_update,
-                        R.drawable.ic_notification
-                    ).also {
-                        if (canShowDialogs) it.show()
-                        else pendingDialogs.add(it)
-                    }
-            }
+        // This FragmentDialog is used to invite the user to confirm continuing update process
+        // You can use a SnackBar instead if you prefer
+        ConfirmationDialogFragment.new(
+            R.string.notification,
+            R.string.restart_to_complete_update,
+            R.drawable.ic_notification
+        ).also {
+            if (canShowDialogs) it.show()
+            else pendingDialogs.add(it)
         }
     }
 
-    private fun ConfirmationDialogFragment.show() = nullableActivity?.let {
+    private fun ConfirmationDialogFragment.show() = activity?.let {
         show(it.supportFragmentManager, (it as Listener).confirmationDialogTag)
     }
 
