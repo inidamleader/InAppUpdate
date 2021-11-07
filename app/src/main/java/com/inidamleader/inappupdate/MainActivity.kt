@@ -29,12 +29,11 @@ class MainActivity : AppCompatActivity(), GoogleFlexibleUpdater.Listener,
         // try catch bloc is used to prevent crash on app, because the code inside is not part of core functionalities,
         // so if there is a problem with GoogleUpdater the app continue running without crash
         try {
-            if (savedInstanceState == null && isGooglePlayServicesAvailable()) {
+            if (savedInstanceState == null && isGooglePlayServicesAvailable())
                 googleFlexibleUpdater.also {
                     lifecycle.addObserver(it)
                     it.checkUpdate()
                 }
-            }
         } catch (e: Exception) {
             // Report this exception
         }
