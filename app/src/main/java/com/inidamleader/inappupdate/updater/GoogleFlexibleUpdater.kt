@@ -128,7 +128,7 @@ class GoogleFlexibleUpdater(
         }
     }
 
-    private fun ConfirmationDialogFragment.show() = activity?.let {
+    private fun ConfirmationDialogFragment.show() = nullableActivity?.let {
         show(it.supportFragmentManager, (it as Listener).confirmationDialogTag)
     }
 
