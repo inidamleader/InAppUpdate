@@ -60,9 +60,7 @@ class GoogleFlexibleUpdater(
                     InstallStatus.INSTALLING -> listener?.onInstalling()
                     InstallStatus.PENDING -> listener?.onPending()
                     InstallStatus.UNKNOWN -> {}
-                    InstallStatus.REQUIRES_UI_INTENT -> {
-                        TODO()
-                    }
+                    InstallStatus.REQUIRES_UI_INTENT -> {}
                 }
             }
         }
