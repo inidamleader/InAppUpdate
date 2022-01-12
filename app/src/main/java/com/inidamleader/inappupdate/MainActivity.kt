@@ -5,7 +5,8 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.View
+import android.view.View.INVISIBLE
+import android.view.View.VISIBLE
 import android.widget.Button
 import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +22,7 @@ class MainActivity : AppCompatActivity(), GoogleFlexibleUpdater.Listener,
     ConfirmationDialogFragment.Listener {
 
     private val googleFlexibleUpdater by lazy { GoogleFlexibleUpdater(this) }
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +40,8 @@ class MainActivity : AppCompatActivity(), GoogleFlexibleUpdater.Listener,
             // Report this exception
         }
 
+        progressBar = findViewById(R.id.progressBar)
+
         // This code can be used to test progressBar UI but should be removed on production
         // todo remove this code
         findViewById<Button>(R.id.button).setOnClickListener {
@@ -45,7 +49,7 @@ class MainActivity : AppCompatActivity(), GoogleFlexibleUpdater.Listener,
                 val max = 154
                 for (i in 0..max) {
                     delay(100)
-                    publishProgress(i.toLong(), max.toLong())
+                    onDownloading(i.toLong(), max.toLong())
                 }
             }
         }
@@ -76,21 +80,32 @@ class MainActivity : AppCompatActivity(), GoogleFlexibleUpdater.Listener,
 
     override val confirmationDialogTag = TAG_FRAGMENT_DIALOG_CONFIRMATION_GOOGLE_UPDATE
 
-    override fun publishProgress(bytesDownloaded: Long, totalBytesToDownload: Long) {
-        val progressBar = findViewById<ProgressBar>(R.id.progressBar)
+    override fun onDownloading(bytesDownloaded: Long, totalBytesToDownload: Long) {
+        progressBar.apply {
+            if (visibility == INVISIBLE) visibility = VISIBLE
+            if (isIndeterminate) isIndeterminate = false
+        }
         val max = progressBar.max
         val percentageProgress = ((bytesDownloaded * max) / totalBytesToDownload).toInt()
-        if (progressBar.progress != percentageProgress) {
-            if (percentageProgress < max) progressBar.visibility = View.VISIBLE
-            else progressBar.apply {
-                visibility = View.INVISIBLE
-                progress = 0
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+            progressBar.setProgress(percentageProgress, true)
+        else progressBar.progress = percentageProgress
+    }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-                progressBar.setProgress(percentageProgress, true)
-            else progressBar.progress = percentageProgress
-        }
+    override fun onInstalling() {
+        progressBar.isIndeterminate = true
+    }
+
+    override fun onPending() {
+        progressBar.isIndeterminate = true
+    }
+
+    override fun onCanceled() {
+        progressBar.visibility = INVISIBLE
+    }
+
+    override fun onFailed() {
+        progressBar.visibility = INVISIBLE
     }
 
     companion object {

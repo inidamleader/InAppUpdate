@@ -1,6 +1,5 @@
 package com.inidamleader.inappupdate.updater
 
-import android.annotation.SuppressLint
 import android.content.IntentSender.SendIntentException
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
@@ -48,15 +47,22 @@ class GoogleFlexibleUpdater(
 
     private val installStateUpdatedListener: InstallStateUpdatedListener =
         object : InstallStateUpdatedListener {
-            @SuppressLint("SwitchIntDef")
             override fun onStateUpdate(state: InstallState) {
                 when (state.installStatus()) {
-                    InstallStatus.DOWNLOADING -> listener?.publishProgress(
+                    InstallStatus.DOWNLOADING -> listener?.onDownloading(
                         state.bytesDownloaded(),
                         state.totalBytesToDownload()
                     )
                     InstallStatus.DOWNLOADED -> showCompleteUpdateConfirmationDialog()
                     InstallStatus.INSTALLED -> appUpdateManager.unregisterListener(this)
+                    InstallStatus.CANCELED -> listener?.onCanceled()
+                    InstallStatus.FAILED -> listener?.onFailed()
+                    InstallStatus.INSTALLING -> listener?.onInstalling()
+                    InstallStatus.PENDING -> listener?.onPending()
+                    InstallStatus.UNKNOWN -> {}
+                    InstallStatus.REQUIRES_UI_INTENT -> {
+                        TODO()
+                    }
                 }
             }
         }
@@ -140,7 +146,11 @@ class GoogleFlexibleUpdater(
     interface Listener {
         val requestCode: Int
         val confirmationDialogTag: String
-        fun publishProgress(bytesDownloaded: Long, totalBytesToDownload: Long)
+        fun onDownloading(bytesDownloaded: Long, totalBytesToDownload: Long)
+        fun onInstalling()
+        fun onCanceled()
+        fun onFailed()
+        fun onPending()
     }
 
     companion object {
